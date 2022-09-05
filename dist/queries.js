@@ -19,11 +19,17 @@ dotenv_1.default.config();
 if (!process.env.PG_PORT) {
     throw "no pg port";
 }
-const client = new pg_1.Client(process.env.DATABASE_URL);
-client.connect();
+const pool = new pg_1.Pool({
+    user: process.env.PG_USER,
+    host: process.env.PG_HOST,
+    database: process.env.PG_DB,
+    password: process.env.PG_PASS,
+    port: parseInt(process.env.PG_PORT),
+    ssl: true,
+});
 const checkIfUserExists = (user) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { rowCount } = yield client.query(`SELECT id FROM "user" WHERE email = '${user.email}' OR username = '${user.username}'`);
+        const { rowCount } = yield pool.query(`SELECT id FROM "user" WHERE email = '${user.email}' OR username = '${user.username}'`);
         console.log({ rowCount });
         return rowCount !== 0;
     }
@@ -35,7 +41,7 @@ const checkIfUserExists = (user) => __awaiter(void 0, void 0, void 0, function* 
 exports.checkIfUserExists = checkIfUserExists;
 const createUser = (user) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { rows } = yield client.query(`INSERT INTO "user" (email, username, password) values ('${user.email}','${user.username}', '${user.password}') RETURNING id`);
+        const { rows } = yield pool.query(`INSERT INTO "user" (email, username, password) values ('${user.email}','${user.username}', '${user.password}') RETURNING id`);
         return rows[0].id;
     }
     catch (err) {
@@ -45,7 +51,7 @@ const createUser = (user) => __awaiter(void 0, void 0, void 0, function* () {
 exports.createUser = createUser;
 const getUserByEmail = (user) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { rows } = yield client.query(`SELECT id, password, admin FROM "user" WHERE email = '${user.email}'`);
+        const { rows } = yield pool.query(`SELECT id, password, admin FROM "user" WHERE email = '${user.email}'`);
         return rows[0];
     }
     catch (err) {
@@ -55,7 +61,7 @@ const getUserByEmail = (user) => __awaiter(void 0, void 0, void 0, function* () 
 exports.getUserByEmail = getUserByEmail;
 const getUserByUsername = (user) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { rows } = yield client.query(`SELECT id, password, admin FROM "user" WHERE username = '${user.username}'`);
+        const { rows } = yield pool.query(`SELECT id, password, admin FROM "user" WHERE username = '${user.username}'`);
         return rows[0];
     }
     catch (err) {
@@ -65,7 +71,7 @@ const getUserByUsername = (user) => __awaiter(void 0, void 0, void 0, function* 
 exports.getUserByUsername = getUserByUsername;
 const createTodoQuery = (createTodo) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { rows } = yield client.query(`
+        const { rows } = yield pool.query(`
         INSERT INTO "todo" 
         (email,username, description) 
         VALUES ('${createTodo.email}','${createTodo.username}','${createTodo.description}') 
@@ -84,7 +90,7 @@ const createTodoQuery = (createTodo) => __awaiter(void 0, void 0, void 0, functi
 exports.createTodoQuery = createTodoQuery;
 const deleteTodoQuery = (id) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { rowCount } = yield client.query(`DELETE FROM "todo" WHERE id = ${id}`);
+        const { rowCount } = yield pool.query(`DELETE FROM "todo" WHERE id = ${id}`);
         return rowCount === 1;
     }
     catch (err) {
@@ -95,7 +101,7 @@ const deleteTodoQuery = (id) => __awaiter(void 0, void 0, void 0, function* () {
 exports.deleteTodoQuery = deleteTodoQuery;
 const editTodoQuery = (id, description) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { rowCount } = yield client.query(`UPDATE "todo" SET description = '${description}', edited = true WHERE id = ${id}`);
+        const { rowCount } = yield pool.query(`UPDATE "todo" SET description = '${description}', edited = true WHERE id = ${id}`);
         return rowCount === 1;
     }
     catch (err) {
@@ -106,7 +112,7 @@ const editTodoQuery = (id, description) => __awaiter(void 0, void 0, void 0, fun
 exports.editTodoQuery = editTodoQuery;
 const updateTodoState = (id) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { rowCount } = yield client.query(`UPDATE "todo" SET complete = NOT complete  WHERE id = ${id}`);
+        const { rowCount } = yield pool.query(`UPDATE "todo" SET complete = NOT complete  WHERE id = ${id}`);
         return rowCount === 1;
     }
     catch (err) {
@@ -121,7 +127,7 @@ const getTodosQuery = (page, parameters) => __awaiter(void 0, void 0, void 0, fu
         let todosCount = 0;
         if (parameters.complete && parameters.usernameOrEmail === "") {
             console.log("COMPLETE ONLY");
-            rows = (yield client.query(`SELECT 
+            rows = (yield pool.query(`SELECT 
         id, 
         "createdAt",
         description, 
@@ -134,11 +140,11 @@ const getTodosQuery = (page, parameters) => __awaiter(void 0, void 0, void 0, fu
       ORDER BY "todo"."createdAt" ${parameters.order}
       LIMIT 3
       OFFSET ${3 * page}`)).rows;
-            todosCount = (yield client.query(`SELECT COUNT(id) as "todoCount" FROM "todo" WHERE "complete" = true`)).rows[0].todoCount;
+            todosCount = (yield pool.query(`SELECT COUNT(id) as "todoCount" FROM "todo" WHERE "complete" = true`)).rows[0].todoCount;
         }
         else if (parameters.complete && parameters.usernameOrEmail !== "") {
             console.log("COMPLETE AND FILTER");
-            rows = (yield client.query(`SELECT 
+            rows = (yield pool.query(`SELECT 
         id, 
         "createdAt",
         description, 
@@ -152,12 +158,12 @@ const getTodosQuery = (page, parameters) => __awaiter(void 0, void 0, void 0, fu
       ORDER BY "todo"."createdAt" ${parameters.order}
       LIMIT 3
       OFFSET ${3 * page}`)).rows;
-            todosCount = (yield client.query(`SELECT COUNT(id) as "todoCount" FROM "todo" WHERE "complete" = true AND (LOWER(email) LIKE '%${parameters.usernameOrEmail.toLocaleLowerCase()}%' 
+            todosCount = (yield pool.query(`SELECT COUNT(id) as "todoCount" FROM "todo" WHERE "complete" = true AND (LOWER(email) LIKE '%${parameters.usernameOrEmail.toLocaleLowerCase()}%' 
           OR LOWER(username) LIKE '%${parameters.usernameOrEmail.toLocaleLowerCase()}%')`)).rows[0].todoCount;
         }
         else if (parameters.usernameOrEmail !== "") {
             console.log("FILTER ONLY");
-            rows = (yield client.query(`SELECT 
+            rows = (yield pool.query(`SELECT 
         id, 
         "createdAt",
         description, 
@@ -171,11 +177,11 @@ const getTodosQuery = (page, parameters) => __awaiter(void 0, void 0, void 0, fu
       ORDER BY "todo"."createdAt" ${parameters.order}
       LIMIT 3
       OFFSET ${3 * page}`)).rows;
-            todosCount = (yield client.query(`SELECT COUNT(id) as "todoCount" FROM "todo" WHERE LOWER(email) LIKE '%${parameters.usernameOrEmail.toLocaleLowerCase()}%' 
+            todosCount = (yield pool.query(`SELECT COUNT(id) as "todoCount" FROM "todo" WHERE LOWER(email) LIKE '%${parameters.usernameOrEmail.toLocaleLowerCase()}%' 
           OR LOWER(username) LIKE '%${parameters.usernameOrEmail.toLocaleLowerCase()}%'`)).rows[0].todoCount;
         }
         else {
-            rows = (yield client.query(`SELECT 
+            rows = (yield pool.query(`SELECT 
       id, 
       "createdAt",
       description, 
@@ -187,7 +193,7 @@ const getTodosQuery = (page, parameters) => __awaiter(void 0, void 0, void 0, fu
     ORDER BY "todo"."createdAt" ${parameters.order}
     LIMIT 3
     OFFSET ${3 * page}`)).rows;
-            todosCount = (yield client.query(`SELECT COUNT(id) as "todoCount" FROM "todo"`)).rows[0].todoCount;
+            todosCount = (yield pool.query(`SELECT COUNT(id) as "todoCount" FROM "todo"`)).rows[0].todoCount;
         }
         return { rows, todosCount };
     }
