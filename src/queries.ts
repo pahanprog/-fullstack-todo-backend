@@ -17,7 +17,9 @@ const pool = new Pool({
   database: process.env.PG_DB,
   password: process.env.PG_PASS,
   port: parseInt(process.env.PG_PORT),
-  ssl: true,
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });
 
 export const checkIfUserExists = async (user: User) => {

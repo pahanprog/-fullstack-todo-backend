@@ -25,7 +25,9 @@ const pool = new pg_1.Pool({
     database: process.env.PG_DB,
     password: process.env.PG_PASS,
     port: parseInt(process.env.PG_PORT),
-    ssl: true,
+    ssl: {
+        rejectUnauthorized: false,
+    },
 });
 const checkIfUserExists = (user) => __awaiter(void 0, void 0, void 0, function* () {
     try {
