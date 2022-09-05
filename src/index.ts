@@ -11,7 +11,7 @@ import cors from "cors";
 dotenv.config();
 
 const corsOptions = {
-  origin: ["https://ps-todo.herokuapp.com", "http://localhost:3000"],
+  origin: ["*"],
   credentials: true,
 };
 
