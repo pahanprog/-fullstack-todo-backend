@@ -32,7 +32,6 @@ const postRegister = (req, res, next) => __awaiter(void 0, void 0, void 0, funct
         return;
     }
     const hashedPassword = yield argon2_1.default.hash(user.password);
-    console.log(hashedPassword);
     user.password = hashedPassword;
     const id = yield (0, queries_1.createUser)(user);
     const token = jsonwebtoken_1.default.sign({ id: id, admin: false }, process.env.JWTSECRET);

@@ -28,8 +28,6 @@ export const checkIfUserExists = async (user: User) => {
       `SELECT id FROM "user" WHERE email = '${user.email}' OR username = '${user.username}'`
     );
 
-    console.log({ rowCount });
-
     return rowCount !== 0;
   } catch (err) {
     console.error(err);
@@ -139,7 +137,6 @@ export const getTodosQuery = async (
     let rows: any = [];
     let todosCount = 0;
     if (parameters.complete && parameters.usernameOrEmail === "") {
-      console.log("COMPLETE ONLY");
       rows = (
         await pool.query(
           `SELECT 
@@ -164,8 +161,6 @@ export const getTodosQuery = async (
         )
       ).rows[0].todoCount;
     } else if (parameters.complete && parameters.usernameOrEmail !== "") {
-      console.log("COMPLETE AND FILTER");
-
       rows = (
         await pool.query(
           `SELECT 
@@ -192,7 +187,6 @@ export const getTodosQuery = async (
         )
       ).rows[0].todoCount;
     } else if (parameters.usernameOrEmail !== "") {
-      console.log("FILTER ONLY");
       rows = (
         await pool.query(
           `SELECT 

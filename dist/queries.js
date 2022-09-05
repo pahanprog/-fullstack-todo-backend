@@ -32,7 +32,6 @@ const pool = new pg_1.Pool({
 const checkIfUserExists = (user) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { rowCount } = yield pool.query(`SELECT id FROM "user" WHERE email = '${user.email}' OR username = '${user.username}'`);
-        console.log({ rowCount });
         return rowCount !== 0;
     }
     catch (err) {
@@ -128,7 +127,6 @@ const getTodosQuery = (page, parameters) => __awaiter(void 0, void 0, void 0, fu
         let rows = [];
         let todosCount = 0;
         if (parameters.complete && parameters.usernameOrEmail === "") {
-            console.log("COMPLETE ONLY");
             rows = (yield pool.query(`SELECT 
         id, 
         "createdAt",
@@ -145,7 +143,6 @@ const getTodosQuery = (page, parameters) => __awaiter(void 0, void 0, void 0, fu
             todosCount = (yield pool.query(`SELECT COUNT(id) as "todoCount" FROM "todo" WHERE "complete" = true`)).rows[0].todoCount;
         }
         else if (parameters.complete && parameters.usernameOrEmail !== "") {
-            console.log("COMPLETE AND FILTER");
             rows = (yield pool.query(`SELECT 
         id, 
         "createdAt",
@@ -164,7 +161,6 @@ const getTodosQuery = (page, parameters) => __awaiter(void 0, void 0, void 0, fu
           OR LOWER(username) LIKE '%${parameters.usernameOrEmail.toLocaleLowerCase()}%')`)).rows[0].todoCount;
         }
         else if (parameters.usernameOrEmail !== "") {
-            console.log("FILTER ONLY");
             rows = (yield pool.query(`SELECT 
         id, 
         "createdAt",

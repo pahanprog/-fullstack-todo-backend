@@ -32,7 +32,6 @@ const postRegister = async (
   }
 
   const hashedPassword = await argon2.hash(user.password);
-  console.log(hashedPassword);
   user.password = hashedPassword;
 
   const id = await createUser(user);
