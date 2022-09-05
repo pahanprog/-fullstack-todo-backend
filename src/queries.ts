@@ -1,12 +1,19 @@
 import { Pool } from "pg";
 import { TodoCreate, User } from "./types";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+if (!process.env.PG_PORT) {
+  throw "no pg port";
+}
 
 const pool = new Pool({
-  user: "postgres",
-  host: "localhost",
-  database: "Todo",
-  password: "jazz",
-  port: 5050,
+  user: process.env.PG_USER,
+  host: process.env.PG_HOST,
+  database: process.env.PG_DB,
+  password: process.env.PG_PASS,
+  port: parseInt(process.env.PG_PORT),
 });
 
 export const checkIfUserExists = async (user: User) => {
