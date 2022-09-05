@@ -1,4 +1,4 @@
-import { Pool } from "pg";
+import { Pool, Client } from "pg";
 import { TodoCreate, User } from "./types";
 import dotenv from "dotenv";
 
@@ -8,17 +8,20 @@ if (!process.env.PG_PORT) {
   throw "no pg port";
 }
 
-const pool = new Pool({
-  user: process.env.PG_USER,
-  host: process.env.PG_HOST,
-  database: process.env.PG_DB,
-  password: process.env.PG_PASS,
-  port: parseInt(process.env.PG_PORT),
-});
+const client = new Client(process.env.DATABASE_URL);
+client.connect();
+
+// const pool = new Pool({
+//   user: process.env.PG_USER,
+//   host: process.env.PG_HOST,
+//   database: process.env.PG_DB,
+//   password: process.env.PG_PASS,
+//   port: parseInt(process.env.PG_PORT),
+// });
 
 export const checkIfUserExists = async (user: User) => {
   try {
-    const { rowCount } = await pool.query(
+    const { rowCount } = await client.query(
       `SELECT id FROM "user" WHERE email = '${user.email}' OR username = '${user.username}'`
     );
 
@@ -33,7 +36,7 @@ export const checkIfUserExists = async (user: User) => {
 
 export const createUser = async (user: User) => {
   try {
-    const { rows } = await pool.query(
+    const { rows } = await client.query(
       `INSERT INTO "user" (email, username, password) values ('${user.email}','${user.username}', '${user.password}') RETURNING id`
     );
 
@@ -45,7 +48,7 @@ export const createUser = async (user: User) => {
 
 export const getUserByEmail = async (user: User) => {
   try {
-    const { rows } = await pool.query(
+    const { rows } = await client.query(
       `SELECT id, password, admin FROM "user" WHERE email = '${user.email}'`
     );
 
@@ -57,7 +60,7 @@ export const getUserByEmail = async (user: User) => {
 
 export const getUserByUsername = async (user: User) => {
   try {
-    const { rows } = await pool.query(
+    const { rows } = await client.query(
       `SELECT id, password, admin FROM "user" WHERE username = '${user.username}'`
     );
 
@@ -69,7 +72,7 @@ export const getUserByUsername = async (user: User) => {
 
 export const createTodoQuery = async (createTodo: TodoCreate) => {
   try {
-    const { rows } = await pool.query(`
+    const { rows } = await client.query(`
         INSERT INTO "todo" 
         (email,username, description) 
         VALUES ('${createTodo.email}','${createTodo.username}','${createTodo.description}') 
@@ -88,7 +91,7 @@ export const createTodoQuery = async (createTodo: TodoCreate) => {
 
 export const deleteTodoQuery = async (id: number) => {
   try {
-    const { rowCount } = await pool.query(
+    const { rowCount } = await client.query(
       `DELETE FROM "todo" WHERE id = ${id}`
     );
 
@@ -101,7 +104,7 @@ export const deleteTodoQuery = async (id: number) => {
 
 export const editTodoQuery = async (id: number, description: string) => {
   try {
-    const { rowCount } = await pool.query(
+    const { rowCount } = await client.query(
       `UPDATE "todo" SET description = '${description}', edited = true WHERE id = ${id}`
     );
 
@@ -114,7 +117,7 @@ export const editTodoQuery = async (id: number, description: string) => {
 
 export const updateTodoState = async (id: number) => {
   try {
-    const { rowCount } = await pool.query(
+    const { rowCount } = await client.query(
       `UPDATE "todo" SET complete = NOT complete  WHERE id = ${id}`
     );
 
@@ -135,7 +138,7 @@ export const getTodosQuery = async (
     if (parameters.complete && parameters.usernameOrEmail === "") {
       console.log("COMPLETE ONLY");
       rows = (
-        await pool.query(
+        await client.query(
           `SELECT 
         id, 
         "createdAt",
@@ -153,7 +156,7 @@ export const getTodosQuery = async (
       ).rows;
 
       todosCount = (
-        await pool.query(
+        await client.query(
           `SELECT COUNT(id) as "todoCount" FROM "todo" WHERE "complete" = true`
         )
       ).rows[0].todoCount;
@@ -161,7 +164,7 @@ export const getTodosQuery = async (
       console.log("COMPLETE AND FILTER");
 
       rows = (
-        await pool.query(
+        await client.query(
           `SELECT 
         id, 
         "createdAt",
@@ -180,7 +183,7 @@ export const getTodosQuery = async (
       ).rows;
 
       todosCount = (
-        await pool.query(
+        await client.query(
           `SELECT COUNT(id) as "todoCount" FROM "todo" WHERE "complete" = true AND (LOWER(email) LIKE '%${parameters.usernameOrEmail.toLocaleLowerCase()}%' 
           OR LOWER(username) LIKE '%${parameters.usernameOrEmail.toLocaleLowerCase()}%')`
         )
@@ -188,7 +191,7 @@ export const getTodosQuery = async (
     } else if (parameters.usernameOrEmail !== "") {
       console.log("FILTER ONLY");
       rows = (
-        await pool.query(
+        await client.query(
           `SELECT 
         id, 
         "createdAt",
@@ -207,14 +210,14 @@ export const getTodosQuery = async (
       ).rows;
 
       todosCount = (
-        await pool.query(
+        await client.query(
           `SELECT COUNT(id) as "todoCount" FROM "todo" WHERE LOWER(email) LIKE '%${parameters.usernameOrEmail.toLocaleLowerCase()}%' 
           OR LOWER(username) LIKE '%${parameters.usernameOrEmail.toLocaleLowerCase()}%'`
         )
       ).rows[0].todoCount;
     } else {
       rows = (
-        await pool.query(
+        await client.query(
           `SELECT 
       id, 
       "createdAt",
@@ -231,7 +234,7 @@ export const getTodosQuery = async (
       ).rows;
 
       todosCount = (
-        await pool.query(`SELECT COUNT(id) as "todoCount" FROM "todo"`)
+        await client.query(`SELECT COUNT(id) as "todoCount" FROM "todo"`)
       ).rows[0].todoCount;
     }
 
