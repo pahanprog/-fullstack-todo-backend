@@ -10,7 +10,7 @@ const todo_1 = __importDefault(require("./routes/todo"));
 const cors_1 = __importDefault(require("cors"));
 dotenv_1.default.config();
 const corsOptions = {
-    origin: ["*"],
+    origin: ["https://ps-todo.herokuapp.com"],
     credentials: true,
 };
 const app = (0, express_1.default)();
